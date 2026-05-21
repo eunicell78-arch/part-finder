@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>부품 소싱 비교표 | Part Sourcing Compare</title>
+<style>
+  :root{
+    --navy:#0a2540; --navy-light:#163a5f; --accent:#00b3a4; --accent-dark:#008c80;
+    --gold:#e8b04b; --bg:#f4f6f9; --card:#ffffff; --line:#dde3ec;
+    --text:#1c2b3a; --muted:#6b7a8d; --auto:#00b3a4; --link:#3a6ea5;
+    --best:#fff3a8; --best-line:#e8b04b; --row-alt:#f8fafc;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,"Segoe UI",Roboto,"Malgun Gothic","맑은 고딕",sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.5;padding-bottom:60px}
+  header{background:linear-gradient(135deg,var(--navy),var(--navy-light));color:#fff;
+    padding:24px 20px 20px;box-shadow:0 2px 12px rgba(10,37,64,.18)}
+  .wrap{max-width:1280px;margin:0 auto}
+  .brand{font-size:12px;letter-spacing:3px;color:var(--gold);font-weight:600;margin-bottom:5px}
+  h1{font-size:22px;font-weight:700}
+  .sub{font-size:12.5px;color:#b9c7d8;margin-top:5px}
+
+  .search-wrap{max-width:1280px;margin:-22px auto 0;padding:0 20px;position:relative;z-index:5}
+  .search-box{background:var(--card);border-radius:14px;padding:18px;
+    box-shadow:0 8px 30px rgba(10,37,64,.12);border:1px solid var(--line)}
+  .search-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .search-row input.part{flex:1;min-width:220px;font-size:18px;padding:13px 15px;
+    border:2px solid var(--line);border-radius:10px;outline:none}
+  .search-row input.part:focus{border-color:var(--accent)}
+  .btn{border:none;border-radius:10px;cursor:pointer;font-weight:600;padding:13px 20px;
+    font-size:15px;transition:transform .08s,background .15s}
+  .btn:active{transform:scale(.97)}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{background:var(--accent-dark)}
+  .btn-ghost{background:#eef2f7;color:var(--navy)}
+  .btn-ghost:hover{background:#e2e9f2}
+  .hint{font-size:12px;color:var(--muted);margin-top:9px}
+  .hint b{color:var(--accent-dark)}
+
+  .toolbar{max-width:1280px;margin:16px auto 0;padding:0 20px;display:flex;gap:9px;
+    align-items:center;flex-wrap:wrap}
+  .toolbar-spacer{flex:1}
+  .mini-btn{font-size:13px;padding:8px 13px;border-radius:8px;border:1px solid var(--line);
+    background:#fff;cursor:pointer;color:var(--navy);font-weight:600}
+  .mini-btn:hover{border-color:var(--accent);color:var(--accent-dark)}
+  .summary{font-size:13px;color:var(--muted)}
+  .summary b{color:var(--navy)}
+
+  /* ===== Table ===== */
+  .table-wrap{max-width:1280px;margin:14px auto 0;padding:0 20px}
+  .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:#fff}
+  table{border-collapse:collapse;width:100%;min-width:920px;font-size:13.5px}
+  thead th{background:var(--navy);color:#fff;font-weight:600;padding:11px 10px;text-align:left;
+    white-space:nowrap;position:sticky;top:0}
+  thead th.num{text-align:right}
+  tbody td{padding:8px 10px;border-top:1px solid var(--line);vertical-align:middle}
+  tbody tr:nth-child(even){background:var(--row-alt)}
+  tbody tr.best{background:var(--best)!important;box-shadow:inset 3px 0 0 var(--best-line)}
+  .site-cell{min-width:160px}
+  .site-name{font-weight:700;color:var(--navy);display:flex;align-items:center;gap:7px}
+  .tag{font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:20px;white-space:nowrap}
+  .tag.auto{background:rgba(0,179,164,.13);color:var(--accent-dark)}
+  .tag.man{background:rgba(58,110,165,.12);color:var(--link)}
+  .cellinput{width:100%;min-width:70px;font-size:13.5px;padding:7px 8px;border:1px solid var(--line);
+    border-radius:7px;outline:none;text-align:right;background:#fff;font-family:inherit}
+  .cellinput:focus{border-color:var(--accent);background:#fff}
+  .cellinput.text{text-align:left}
+  .gobtn{display:inline-block;text-decoration:none;font-size:12.5px;font-weight:600;
+    padding:7px 11px;border-radius:7px;background:var(--navy);color:#fff;white-space:nowrap;transition:background .15s}
+  .gobtn:hover{background:var(--accent-dark)}
+  .gobtn.disabled{background:#cbd4e0;pointer-events:none}
+  .best-badge{font-size:10.5px;font-weight:700;color:#8a6d1a;background:rgba(232,176,75,.25);
+    padding:1px 7px;border-radius:20px;margin-left:6px}
+  .del{border:none;background:transparent;color:#c2ccd8;cursor:pointer;font-size:15px;padding:4px}
+  .del:hover{color:#d23}
+  .note-input{width:100%;min-width:90px;font-size:12.5px;padding:6px 8px;border:1px solid var(--line);
+    border-radius:7px;outline:none;font-family:inherit}
+
+  .empty{max-width:1280px;margin:50px auto;padding:0 20px;text-align:center;color:var(--muted);font-size:15px}
+  .empty .big{font-size:40px;margin-bottom:10px}
+
+  /* add panel */
+  .add-inner{max-width:1280px;margin:14px auto 0;padding:0 20px;display:none}
+  .add-inner.open{display:block}
+  .add-card{background:#fff;border:1px dashed var(--line);border-radius:12px;padding:16px}
+  .add-card h3{font-size:15px;color:var(--navy);margin-bottom:10px}
+  .add-grid{display:grid;grid-template-columns:1fr 1fr 2fr;gap:9px}
+  .add-grid input{font-size:14px;padding:10px;border:1px solid var(--line);border-radius:8px;outline:none}
+  .add-grid input:focus{border-color:var(--accent)}
+  .add-note{font-size:12px;color:var(--muted);margin:9px 0 11px}
+  .add-note code{background:#eef2f7;padding:2px 6px;border-radius:4px;color:var(--accent-dark);font-weight:600}
+  .btn-gold{background:var(--gold);color:var(--navy)}
+  @media(max-width:700px){.add-grid{grid-template-columns:1fr}}
+
+  footer{max-width:1280px;margin:34px auto 0;padding:18px 20px;text-align:center;
+    font-size:11.5px;color:var(--muted);border-top:1px solid var(--line)}
+
+  /* ===== 인쇄(PDF) 전용 ===== */
+  #printHead{display:none}
+  @media print{
+    @page{ size:A4 landscape; margin:12mm; }
+    body{background:#fff;padding:0}
+    header,.search-wrap,.toolbar,.add-inner,.empty,footer,.no-print{display:none!important}
+    #printHead{display:block;margin-bottom:10px}
+    #printHead .pt{font-size:18px;font-weight:700;color:#0a2540}
+    #printHead .ps{font-size:12px;color:#555;margin-top:3px}
+    .table-wrap{margin:0;padding:0;max-width:100%}
+    .scroll{overflow:visible;border:none;border-radius:0}
+    table{min-width:0;width:100%;font-size:11px}
+    thead th{background:#0a2540!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    tbody tr.best{background:#fff3a8!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    /* 입력칸을 테두리 없는 글자처럼 */
+    .cellinput,.note-input{border:none!important;background:transparent!important;padding:2px 4px;
+      box-shadow:none;color:#1c2b3a;-webkit-appearance:none}
+    .tag{border:1px solid #ccc;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="brand">PART SOURCING TOOL</div>
+    <h1>📊 글로벌 반도체 부품 소싱 비교표</h1>
+    <div class="sub">부품번호 하나로 여러 사이트의 가격·재고를 한 표에서 비교합니다</div>
+  </div>
+</header>
+
+<div class="search-wrap">
+  <div class="search-box">
+    <div class="search-row">
+      <input class="part" id="partInput" type="text" placeholder="부품번호 입력 (예: BAV99, LM358, STM32F103C8T6)" autocomplete="off">
+      <button class="btn btn-primary" onclick="applyPart()">검색표 만들기</button>
+      <button class="btn btn-ghost" onclick="openAllAuto()">자동사이트 전체 열기 ↗</button>
+    </div>
+    <div class="hint">
+      💡 <b>초록 배지(자동)</b> 사이트는 「전체 열기」로 결과 페이지가 한꺼번에 뜹니다. 본 값을 표 칸에 적으세요.
+      &nbsp;·&nbsp; <b>파란 배지(수동)</b> 사이트는 직접 들어가 확인 후 칸을 채우면 됩니다.
+      &nbsp;·&nbsp; 가장 싼 단가 줄은 <b>노란색 + BEST</b> 로 표시됩니다.
+    </div>
+  </div>
+</div>
+
+<div class="toolbar">
+  <div class="summary" id="summary">부품번호를 입력하고 <b>검색표 만들기</b>를 누르세요.</div>
+  <div class="toolbar-spacer"></div>
+  <button class="mini-btn" onclick="toggleAdd()">＋ 사이트 추가</button>
+  <button class="mini-btn" onclick="clearValues()">입력값 비우기</button>
+  <button class="mini-btn" onclick="exportCSV()">📥 CSV 내보내기</button>
+  <button class="mini-btn" onclick="printPDF()">🖨 인쇄 / PDF로 저장</button>
+  <button class="mini-btn" onclick="resetSites()">기본값 복원</button>
+</div>
+
+<div class="add-inner" id="addInner">
+  <div class="add-card">
+    <h3>새 사이트(거래처) 추가</h3>
+    <div class="add-grid">
+      <input id="newName" placeholder="사이트 이름">
+      <select id="newType" style="font-size:14px;padding:10px;border:1px solid var(--line);border-radius:8px;outline:none">
+        <option value="auto">자동 (검색 URL 있음)</option>
+        <option value="man">수동 (직접 입력)</option>
+      </select>
+      <input id="newUrl" placeholder="URL — 자동이면 부품 자리에 {Q} 사용 / 수동이면 사이트 주소만">
+    </div>
+    <div class="add-note">
+      예) 자동: <code>https://octopart.com/search?q={Q}</code> &nbsp;·&nbsp; 수동: <code>https://www.brokerbin.com</code>
+    </div>
+    <button class="btn btn-gold" onclick="addSite()">추가하기</button>
+  </div>
+</div>
+
+<div class="table-wrap">
+  <div id="printHead">
+    <div class="pt">📊 부품 소싱 비교표 — <span id="phPart"></span></div>
+    <div class="ps">작성일 <span id="phDate"></span> &nbsp;|&nbsp; 단가 기준: USD</div>
+  </div>
+  <div class="scroll">
+    <table id="tbl">
+      <thead>
+        <tr>
+          <th class="site-cell">사이트 / 유통사</th>
+          <th class="num">단가 (USD)</th>
+          <th class="num">재고 수량</th>
+          <th class="num">MOQ</th>
+          <th class="num">예상금액<br><span style="font-weight:400;font-size:10px;color:#b9c7d8">단가×MOQ</span></th>
+          <th>리드타임</th>
+          <th>비고 / 메모</th>
+          <th class="no-print">바로가기</th>
+          <th class="no-print"></th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="empty" id="empty">
+  <div class="big">🔍</div>
+  위에 부품번호를 입력하고 <b>「검색표 만들기」</b>를 누르면<br>모든 사이트가 표로 나타납니다.
+</div>
+
+<footer>
+  Part Sourcing Compare &nbsp;|&nbsp; 2026<br>
+  ※ 자동 사이트는 결과 페이지로 연결됩니다. 가격·재고는 직접 확인 후 입력하는 방식입니다(브라우저 보안상 자동 수집은 API 키 필요).
+</footer>
+
+<script>
+const DEFAULT_SITES = [
+  // 자동(검색 결과 페이지로 직행) — {Q} 포함
+  { name:"Octopart",           type:"auto", url:"https://octopart.com/search?q={Q}" },
+  { name:"Findchips",          type:"auto", url:"https://www.findchips.com/search/{Q}" },
+  { name:"OEMsTrade",          type:"auto", url:"https://www.oemstrade.com/search/{Q}" },
+  { name:"DigiKey 대한민국",    type:"auto", url:"https://www.digikey.kr/ko/products/result?keywords={Q}" },
+  { name:"Mouser",             type:"auto", url:"https://www.mouser.kr/c/?q={Q}" },
+  { name:"Arrow.com",          type:"auto", url:"https://www.arrow.com/en/products/search?q={Q}" },
+  { name:"Newark",             type:"auto", url:"https://www.newark.com/search?st={Q}" },
+  { name:"Farnell UK",         type:"auto", url:"https://uk.farnell.com/search?st={Q}" },
+  { name:"element14 Korea",    type:"auto", url:"https://kr.element14.com/search?st={Q}" },
+  { name:"RS Components",       type:"auto", url:"https://www.rs-online.com/web/c/?searchTerm={Q}" },
+  { name:"Chip 1 Exchange",    type:"auto", url:"https://www.chip1.com/search?q={Q}" },
+  { name:"엘레파츠",           type:"auto", url:"https://www.eleparts.co.kr/goods/catalog?keyword={Q}" },
+  { name:"아이씨뱅큐",         type:"auto", url:"https://www.icbanq.com/search/?searchText={Q}" },
+  { name:"디바이스마트",        type:"auto", url:"https://www.devicemart.co.kr/goods/search?keyword={Q}" },
+  // 수동(사이트만 연결)
+  { name:"netCOMPONENTS",      type:"man",  url:"https://www.netcomponents.com" },
+  { name:"BrokerForum",        type:"man",  url:"https://www.brokerforum.com" },
+  { name:"BrokerBin",          type:"man",  url:"https://www.brokerbin.com" },
+  { name:"ICBin.com",          type:"man",  url:"https://www.icbin.com" },
+  { name:"IC Source",          type:"man",  url:"https://www.icsource.com" },
+  { name:"Hong Kong Inventory", type:"man", url:"https://www.hkinventory.com" },
+  { name:"ERAI",               type:"man",  url:"https://www.erai.com" },
+  { name:"A2 Global",          type:"man",  url:"https://www.a2globalelectronics.com" }
+];
+
+const SITE_KEY = "psc_sites_v2";
+const VAL_KEY  = "psc_vals_v2";
+const PART_KEY = "psc_part_v2";
+
+let sites = loadSites();
+let vals  = loadVals();   // { siteName: {price, stock, moq, lt, note} }
+let currentPart = localStorage.getItem(PART_KEY) || "";
+
+function loadSites(){
+  try{ const a=JSON.parse(localStorage.getItem(SITE_KEY)); if(Array.isArray(a)&&a.length) return a; }catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULT_SITES));
+}
+function saveSites(){ try{localStorage.setItem(SITE_KEY,JSON.stringify(sites));}catch(e){} }
+function loadVals(){ try{return JSON.parse(localStorage.getItem(VAL_KEY))||{};}catch(e){return {};} }
+function saveVals(){ try{localStorage.setItem(VAL_KEY,JSON.stringify(vals));}catch(e){} }
+
+function buildUrl(site, part){
+  if(site.type==="auto" && part) return site.url.replace(/\{Q\}/g, encodeURIComponent(part));
+  return site.url;
+}
+function escapeHtml(s){return (s||"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+function applyPart(){
+  currentPart = document.getElementById("partInput").value.trim();
+  localStorage.setItem(PART_KEY, currentPart);
+  render();
+}
+
+function findBestRow(){
+  // 최저 단가(>0) 사이트 이름 반환
+  let best=null, min=Infinity;
+  sites.forEach(s=>{
+    const p = parseFloat((vals[s.name]||{}).price);
+    if(!isNaN(p) && p>0 && p<min){ min=p; best=s.name; }
+  });
+  return best;
+}
+
+function render(){
+  const tbody = document.getElementById("tbody");
+  const empty = document.getElementById("empty");
+  const part = currentPart;
+  document.getElementById("partInput").value = part;
+
+  if(!part){
+    tbody.innerHTML=""; empty.style.display="block";
+    document.getElementById("summary").innerHTML="부품번호를 입력하고 <b>검색표 만들기</b>를 누르세요.";
+    return;
+  }
+  empty.style.display="none";
+
+  const best = findBestRow();
+  tbody.innerHTML = "";
+
+  sites.forEach((s, i)=>{
+    const v = vals[s.name] || {price:"",stock:"",moq:"",lt:"",note:""};
+    const url = buildUrl(s, part);
+    const isBest = (s.name===best);
+    const tr = document.createElement("tr");
+    if(isBest) tr.className="best";
+
+    const tag = s.type==="auto"
+      ? '<span class="tag auto">자동</span>'
+      : '<span class="tag man">수동</span>';
+    const bestBadge = isBest ? '<span class="best-badge">BEST</span>' : '';
+    const goLabel = s.type==="auto" ? "검색결과 ↗" : "사이트 ↗";
+
+    const priceN = parseFloat(v.price), moqN = parseFloat(v.moq);
+    const est = (!isNaN(priceN) && !isNaN(moqN)) ? (priceN*moqN) : null;
+    const estText = est!==null ? "$"+est.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) : "—";
+
+    tr.innerHTML = `
+      <td class="site-cell">
+        <div class="site-name">${escapeHtml(s.name)} ${tag}${bestBadge}</div>
+      </td>
+      <td><input class="cellinput" type="number" step="0.0001" placeholder="0.00"
+            value="${v.price||""}" oninput="setVal('${jsName(s.name)}','price',this.value)"></td>
+      <td><input class="cellinput" type="number" placeholder="0"
+            value="${v.stock||""}" oninput="setVal('${jsName(s.name)}','stock',this.value)"></td>
+      <td><input class="cellinput" type="number" placeholder="0"
+            value="${v.moq||""}" oninput="setVal('${jsName(s.name)}','moq',this.value)"></td>
+      <td class="est" style="text-align:right;color:var(--muted);white-space:nowrap">${estText}</td>
+      <td><input class="cellinput text" type="text" placeholder="예: 8주"
+            value="${escapeHtml(v.lt)||""}" oninput="setVal('${jsName(s.name)}','lt',this.value)"></td>
+      <td><input class="note-input" type="text" placeholder="메모"
+            value="${escapeHtml(v.note)||""}" oninput="setVal('${jsName(s.name)}','note',this.value)"></td>
+      <td class="no-print"><a class="gobtn" href="${url}" target="_blank" rel="noopener">${goLabel}</a></td>
+      <td class="no-print"><button class="del" title="삭제" onclick="removeSite(${i})">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const filled = sites.filter(s=>{const v=vals[s.name]||{};return v.price||v.stock;}).length;
+  let txt = `부품: <b>${escapeHtml(part)}</b> &nbsp;·&nbsp; 사이트 <b>${sites.length}</b>개 (자동 ${sites.filter(s=>s.type==='auto').length} / 수동 ${sites.filter(s=>s.type==='man').length}) &nbsp;·&nbsp; 입력완료 <b>${filled}</b>개`;
+  if(best) txt += ` &nbsp;·&nbsp; 최저단가 🏆 <b>${escapeHtml(best)}</b>`;
+  document.getElementById("summary").innerHTML = txt;
+}
+
+// 이름에 따옴표 등이 있어도 안전하게
+function jsName(name){ return name.replace(/'/g,"\\'"); }
+
+function setVal(name, field, value){
+  const realName = name.replace(/\\'/g,"'");
+  if(!vals[realName]) vals[realName]={price:"",stock:"",moq:"",lt:"",note:""};
+  vals[realName][field]=value;
+  saveVals();
+  // 단가/MOQ가 바뀌면 BEST·예상금액 다시 계산해야 하므로 재렌더
+  if(field==="price" || field==="moq") render();
+  else updateSummary();
+}
+function updateSummary(){
+  const filled = sites.filter(s=>{const v=vals[s.name]||{};return v.price||v.stock;}).length;
+  const best=findBestRow();
+  let txt = `부품: <b>${escapeHtml(currentPart)}</b> &nbsp;·&nbsp; 사이트 <b>${sites.length}</b>개 (자동 ${sites.filter(s=>s.type==='auto').length} / 수동 ${sites.filter(s=>s.type==='man').length}) &nbsp;·&nbsp; 입력완료 <b>${filled}</b>개`;
+  if(best) txt += ` &nbsp;·&nbsp; 최저단가 🏆 <b>${escapeHtml(best)}</b>`;
+  document.getElementById("summary").innerHTML=txt;
+}
+
+function openAllAuto(){
+  if(!currentPart){ alert("먼저 부품번호를 입력하고 검색표를 만들어주세요."); return; }
+  const targets = sites.filter(s=>s.type==="auto");
+  if(!targets.length){ alert("자동 사이트가 없습니다."); return; }
+  if(targets.length>6 && !confirm(targets.length+"개 탭이 열립니다. 계속할까요?\n팝업이 차단되면 허용해 주세요.")) return;
+  targets.forEach((s,i)=> setTimeout(()=>window.open(buildUrl(s,currentPart),"_blank","noopener"), i*250));
+}
+
+function toggleAdd(){ document.getElementById("addInner").classList.toggle("open"); }
+function addSite(){
+  const name=document.getElementById("newName").value.trim();
+  const type=document.getElementById("newType").value;
+  let url=document.getElementById("newUrl").value.trim();
+  if(!name||!url){ alert("이름과 URL을 입력해주세요."); return; }
+  if(!/^https?:\/\//i.test(url)) url="https://"+url;
+  if(type==="auto" && !url.includes("{Q}")){
+    if(!confirm("자동인데 {Q}가 없습니다. 그래도 추가할까요?\n(부품번호가 자동으로 안 들어가고 사이트만 열립니다)")) return;
+  }
+  sites.push({name,type,url}); saveSites();
+  document.getElementById("newName").value="";
+  document.getElementById("newUrl").value="";
+  document.getElementById("addInner").classList.remove("open");
+  render();
+}
+function removeSite(i){
+  if(confirm(`"${sites[i].name}" 를 표에서 삭제할까요?`)){
+    const nm=sites[i].name; sites.splice(i,1); delete vals[nm];
+    saveSites(); saveVals(); render();
+  }
+}
+function clearValues(){
+  if(confirm("입력한 가격·재고·메모를 모두 비울까요? (사이트 목록은 유지)")){
+    vals={}; saveVals(); render();
+  }
+}
+function resetSites(){
+  if(confirm("사이트 목록을 기본값으로 복원할까요? (직접 추가/삭제 내용 사라짐, 입력값은 유지)")){
+    sites=JSON.parse(JSON.stringify(DEFAULT_SITES)); saveSites(); render();
+  }
+}
+function exportCSV(){
+  if(!currentPart){ alert("부품번호를 먼저 입력해주세요."); return; }
+  const rows=[["Part Number","Site","Type","Unit Price(USD)","Stock","MOQ","Est. Amount(USD)","Lead Time","Note","URL"]];
+  sites.forEach(s=>{
+    const v=vals[s.name]||{};
+    const p=parseFloat(v.price), m=parseFloat(v.moq);
+    const est=(!isNaN(p)&&!isNaN(m))?(p*m).toFixed(2):"";
+    rows.push([currentPart, s.name, s.type==="auto"?"자동":"수동",
+      v.price||"", v.stock||"", v.moq||"", est, v.lt||"", v.note||"", buildUrl(s,currentPart)]);
+  });
+  const csv="\uFEFF"+rows.map(r=>r.map(c=>{
+    c=String(c); return /[",\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c;
+  }).join(",")).join("\r\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=`부품비교_${currentPart}_2026.csv`;
+  a.click();
+}
+
+function printPDF(){
+  if(!currentPart){ alert("부품번호를 먼저 입력해주세요."); return; }
+  document.getElementById("phPart").textContent = currentPart;
+  const d=new Date();
+  document.getElementById("phDate").textContent =
+    d.getFullYear()+"."+String(d.getMonth()+1).padStart(2,"0")+"."+String(d.getDate()).padStart(2,"0");
+  window.print();
+}
+
+document.getElementById("partInput").addEventListener("keydown",e=>{ if(e.key==="Enter") applyPart(); });
+
+render();
+</script>
+</body>
+</html>
