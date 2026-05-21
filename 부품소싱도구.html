@@ -151,6 +151,12 @@
       </div>
       <div class="toolbar">
         <input class="search-input" id="cmpFilter" placeholder="🔍 표에서 사이트 이름 거르기..." oninput="renderCompare()">
+        <label style="font-size:13px;color:var(--navy);font-weight:600;display:flex;align-items:center;gap:5px;white-space:nowrap;cursor:pointer">
+          <input type="checkbox" id="onlyStock" onchange="renderCompare()" style="width:16px;height:16px"> 재고 있는 곳만
+        </label>
+        <label style="font-size:13px;color:var(--navy);font-weight:600;display:flex;align-items:center;gap:5px;white-space:nowrap;cursor:pointer">
+          <input type="checkbox" id="sortPrice" checked onchange="renderCompare()" style="width:16px;height:16px"> 최저가 순 정렬
+        </label>
         <div class="summary" id="summary">부품번호를 입력하고 검색표를 만드세요.</div>
         <div class="toolbar-spacer"></div>
         <button class="mini-btn" onclick="clearValues()">입력값 비우기</button>
@@ -368,19 +374,41 @@ function renderCompare(){
   if(!part){ tb.innerHTML=""; empty.style.display="block"; document.getElementById('summary').innerHTML="부품번호를 입력하고 검색표를 만드세요."; return; }
   empty.style.display="none";
   const f=(document.getElementById('cmpFilter').value||"").toLowerCase().trim();
+  const onlyStock=document.getElementById('onlyStock').checked;
+  const sortPrice=document.getElementById('sortPrice').checked;
   const best=bestRow(); tb.innerHTML="";
+
+  // 표시 대상 추리기 (원래 인덱스 유지)
+  let list=sites.map((s,i)=>({s,i})).filter(({s})=>{
+    if(f && !s.name.toLowerCase().includes(f)) return false;
+    if(onlyStock){ const st=parseFloat((vals[s.name]||{}).stock); if(isNaN(st)||st<=0) return false; }
+    return true;
+  });
+  // 최저가 순 정렬: 단가 입력된 것 먼저(오름차순), 미입력은 뒤로
+  if(sortPrice){
+    list.sort((a,b)=>{
+      const pa=parseFloat((vals[a.s.name]||{}).price), pb=parseFloat((vals[b.s.name]||{}).price);
+      const va=(!isNaN(pa)&&pa>0), vb=(!isNaN(pb)&&pb>0);
+      if(va&&vb) return pa-pb;
+      if(va) return -1;
+      if(vb) return 1;
+      return a.i-b.i;
+    });
+  }
   let shown=0;
-  sites.forEach((s,i)=>{
-    if(f && !s.name.toLowerCase().includes(f)) return;
+  list.forEach(({s,i})=>{
     shown++;
     const v=vals[s.name]||{price:"",stock:"",moq:"",lt:"",note:""};
     const auto=isAuto(s), url=urlFor(s,part), isB=(s.name===best);
     const p=parseFloat(v.price), mq=parseFloat(v.moq);
     const est=(!isNaN(p)&&!isNaN(mq))?"$"+(p*mq).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}):"—";
+    const stockN=parseFloat(v.stock);
+    const hasStock=(!isNaN(stockN)&&stockN>0);
     const tr=document.createElement('tr'); if(isB)tr.className="best";
     tr.innerHTML=`
       <td class="site-cell"><div class="site-name">${esc(s.name)}
         ${auto?'<span class="tag auto">자동</span>':'<span class="tag man">수동</span>'}
+        ${hasStock?'<span class="tag" style="background:rgba(22,163,74,.13);color:#16a34a">재고있음</span>':''}
         ${isB?'<span class="best-badge">BEST</span>':''}</div></td>
       <td><input class="cellinput" type="number" step="0.0001" placeholder="0.00" value="${v.price||''}" oninput="setVal('${jn(s.name)}','price',this.value)"></td>
       <td><input class="cellinput" type="number" placeholder="0" value="${v.stock||''}" oninput="setVal('${jn(s.name)}','stock',this.value)"></td>
@@ -391,15 +419,36 @@ function renderCompare(){
       <td class="no-print"><a class="gobtn" href="${url}" target="_blank" rel="noopener">${auto?'검색결과 ↗':'사이트 ↗'}</a></td>`;
     tb.appendChild(tr);
   });
+  if(shown===0){ tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:30px">조건에 맞는 사이트가 없습니다. (재고를 입력한 사이트가 없으면 「재고 있는 곳만」을 꺼보세요)</td></tr>'; }
   const autoN=sites.filter(isAuto).length;
-  let txt=`부품 <b>${esc(part)}</b> · 사이트 <b>${sites.length}</b>개(자동 ${autoN}/수동 ${sites.length-autoN})`;
-  if(f) txt+=` · 표시 <b>${shown}</b>개`;
+  const stockCnt=sites.filter(s=>{const st=parseFloat((vals[s.name]||{}).stock);return !isNaN(st)&&st>0;}).length;
+  let txt=`부품 <b>${esc(part)}</b> · 사이트 <b>${sites.length}</b>개 · <span style="color:#16a34a">재고확인 ${stockCnt}곳</span>`;
+  if(f||onlyStock) txt+=` · 표시 <b>${shown}</b>개`;
   if(best) txt+=` · 최저단가 🏆 <b>${esc(best)}</b>`;
   document.getElementById('summary').innerHTML=txt;
 }
 function jn(n){ return n.replace(/'/g,"\\'"); }
-function setVal(n,field,val){ const name=n.replace(/\\'/g,"'"); if(!vals[name])vals[name]={price:"",stock:"",moq:"",lt:"",note:""}; vals[name][field]=val; saveVals(); if(field==="price"||field==="moq")renderCompare(); else updateSummary(); }
-function updateSummary(){ const best=bestRow(),autoN=sites.filter(isAuto).length; let t=`부품 <b>${esc(currentPart)}</b> · 사이트 <b>${sites.length}</b>개(자동 ${autoN}/수동 ${sites.length-autoN})`; if(best)t+=` · 최저단가 🏆 <b>${esc(best)}</b>`; document.getElementById('summary').innerHTML=t; }
+function setVal(n,field,val){
+  const name=n.replace(/\\'/g,"'");
+  if(!vals[name])vals[name]={price:"",stock:"",moq:"",lt:"",note:""};
+  vals[name][field]=val; saveVals();
+  // 입력 중에는 줄 순서를 바꾸지 않고(타이핑 끊김 방지) 요약/배지만 갱신
+  updateSummary();
+  // 예상금액 즉시 반영: 해당 행만 살짝 갱신은 생략하고 요약만. 정렬은 입력칸 벗어날 때.
+}
+// 입력칸에서 포커스가 빠지면 그때 재정렬/재계산
+document.addEventListener('blur', function(e){
+  if(e.target && (e.target.classList.contains('cellinput')||e.target.classList.contains('note-input'))){
+    renderCompare();
+  }
+}, true);
+function updateSummary(){
+  const best=bestRow();
+  const stockCnt=sites.filter(s=>{const st=parseFloat((vals[s.name]||{}).stock);return !isNaN(st)&&st>0;}).length;
+  let t=`부품 <b>${esc(currentPart)}</b> · 사이트 <b>${sites.length}</b>개 · <span style="color:#16a34a">재고확인 ${stockCnt}곳</span>`;
+  if(best)t+=` · 최저단가 🏆 <b>${esc(best)}</b>`;
+  document.getElementById('summary').innerHTML=t;
+}
 function openAllAuto(){
   if(!currentPart){ alert("먼저 부품번호를 입력하고 검색표를 만드세요."); return; }
   const t=sites.filter(isAuto);
